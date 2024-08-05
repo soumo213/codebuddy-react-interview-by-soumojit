@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { LoadingScreen } from "../components";
 
 const Posts = () => {
+  const navigate = useNavigate();
   const [postList, setPostList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,17 +28,24 @@ const Posts = () => {
     fetchData();
   }, []);
 
+  const redirectToAddPost = () => {
+    navigate("/add-post");
+  };
+
   if (loading) return <LoadingScreen />;
 
   return (
     <div className="rounded-lg bg-gray-50 p-7 text-gray-900 shadow-lg">
       <h1 className="mb-7 text-4xl font-bold">Posts</h1>
-      <div className="flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <Link to="/" className="flex items-center text-blue-600 hover:underline">
           <Icon icon="mdi:arrow-left" className="mr-2" />
           Back to Home
         </Link>
-        <button className="rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700">
+        <button
+          className="rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700"
+          onClick={redirectToAddPost}
+        >
           Add Post
         </button>
       </div>
