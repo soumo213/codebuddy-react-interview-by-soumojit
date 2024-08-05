@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { Validator } from "../utils/validator";
 import { handleAlphabets, handleNumbers } from "../utils";
 
 const AddPost = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isValid, setIsValid] = useState(true);
 
   const [formData, setFormData] = useState({
     emailId: "",
@@ -15,9 +17,19 @@ const AddPost = () => {
     address: "",
     countryCode: "+91",
     phoneNumber: "",
+    acceptTermsAndCondition: false,
   });
 
-  const { emailId, password, firstName, lastName, address, countryCode, phoneNumber } = formData;
+  const {
+    emailId,
+    password,
+    firstName,
+    lastName,
+    address,
+    countryCode,
+    phoneNumber,
+    acceptTermsAndCondition,
+  } = formData;
 
   const [errMsg, setErrMsg] = useState({
     emailId: "",
@@ -27,6 +39,8 @@ const AddPost = () => {
     address: "",
     countryCode: "",
     phoneNumber: "",
+    acceptTermsAndCondition: "",
+    submitError: "",
   });
 
   // Handle
@@ -37,11 +51,23 @@ const AddPost = () => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    const { name, value, checked } = e.target;
+    if (e.target.type === "checkbox") {
+      setFormData({
+        ...formData,
+        [name]: checked,
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
+    setIsValid(true);
+    setErrMsg((prev) => ({
+      ...prev,
+      submitError: "",
+    }));
 
     if (e.target.name === "emailId") {
       if (!Validator.text(e.target.value)) {
@@ -157,6 +183,20 @@ const AddPost = () => {
         }));
       }
     }
+
+    if (e.target.name === "acceptTermsAndCondition") {
+      if (!e.target.checked) {
+        setErrMsg((prev) => ({
+          ...prev,
+          acceptTermsAndCondition: "You must accept the terms and conditions",
+        }));
+      } else {
+        setErrMsg((prev) => ({
+          ...prev,
+          acceptTermsAndCondition: "",
+        }));
+      }
+    }
   };
 
   // Validation
@@ -256,6 +296,11 @@ const AddPost = () => {
           errors.phoneNumber = "Phone Number must contain 10 digits";
           valid = false;
         }
+
+        if (!acceptTermsAndCondition) {
+          errors.acceptTermsAndCondition = "You must accept the terms and conditions";
+          valid = false;
+        }
       }
 
       setErrMsg(errors);
@@ -263,10 +308,7 @@ const AddPost = () => {
     });
   };
 
-  console.log(currentStep);
-
   // Subbmit & Reset
-
   const handleSaveAndNext = async () => {
     const validateStatus = await getValidation();
     if (validateStatus) {
@@ -277,8 +319,42 @@ const AddPost = () => {
   const handleSubmit = async () => {
     if (currentStep === 3) {
       const validateStatus = await getValidation();
+      setIsValid(validateStatus);
       if (validateStatus) {
-        console.log(formData);
+        try {
+          const payload = {
+            emailId,
+            password,
+            firstName,
+            lastName,
+            address,
+            countryCode,
+            phoneNumber,
+          };
+          const response = await fetch("https://codebuddy.review/submit", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+          
+          const result = await response.json();
+
+          if (result.message === "Success") {
+            navigate("/posts");
+          } else {
+            setErrMsg((prev) => ({
+              ...prev,
+              submitError: "An error occurred. Please try again later.",
+            }));
+          }
+        } catch (error) {
+          setErrMsg((prev) => ({
+            ...prev,
+            submitError: "An error occurred. Please try again later.",
+          }));
+        }
       }
     } else {
       handleStepChange(currentStep + 1);
@@ -322,114 +398,143 @@ const AddPost = () => {
 
       <div className="mx-auto space-y-4 p-6">
         <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col">
-            <label htmlFor="emailId" className="mb-1 font-semibold">
-              Email
-            </label>
-            <input
-              type="email"
-              id="emailId"
-              name="emailId"
-              value={formData.emailId}
-              onChange={handleChange}
-              className="rounded border p-2"
-            />
-            {errMsg.emailId && <p className="mt-2 text-sm text-red-500">{errMsg.emailId}</p>}
-          </div>
-          <div className="flex flex-col">
-            <label htmlFor="password" className="mb-1 font-semibold">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="rounded border p-2"
-            />
-            {errMsg.password && <p className="mt-2 text-sm text-red-500">{errMsg.password}</p>}
-          </div>
-          <div className="flex flex-col">
-            <label htmlFor="firstName" className="mb-1 font-semibold">
-              First Name
-            </label>
-            <input
-              type="text"
-              id="firstName"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              onKeyDown={handleAlphabets}
-              className="rounded border p-2"
-            />
-            {errMsg.firstName && <p className="mt-2 text-sm text-red-500">{errMsg.firstName}</p>}
-          </div>
-          <div className="flex flex-col">
-            <label htmlFor="lastName" className="mb-1 font-semibold">
-              Last Name
-            </label>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              onKeyDown={handleAlphabets}
-              className="rounded border p-2"
-            />
-            {errMsg.lastName && <p className="mt-2 text-sm text-red-500">{errMsg.lastName}</p>}
-          </div>
-          <div className="col-span-2 flex flex-col">
-            <label htmlFor="address" className="mb-1 font-semibold">
-              Address
-            </label>
-            <input
-              type="text"
-              id="address"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              className="rounded border p-2"
-            />
-            {errMsg.address && <p className="mt-2 text-sm text-red-500">{errMsg.address}</p>}
-          </div>
-          <div className="flex flex-col">
-            <label htmlFor="countryCode" className="mb-1 font-semibold">
-              Country Code
-            </label>
-            <select
-              id="countryCode"
-              name="countryCode"
-              value={formData.countryCode}
-              onChange={handleChange}
-              className="rounded border p-2"
-            >
-              <option value="+91">India (+91)</option>
-              <option value="+1">America (+1)</option>
-            </select>
-            {errMsg.countryCode && (
-              <p className="mt-2 text-sm text-red-500">{errMsg.countryCode}</p>
-            )}
-          </div>
-          <div className="flex flex-col">
-            <label htmlFor="phoneNumber" className="mb-1 font-semibold">
-              Phone Number
-            </label>
-            <input
-              type="text"
-              id="phoneNumber"
-              name="phoneNumber"
-              value={formData.phoneNumber}
-              onChange={handleChange}
-              onKeyDown={handleNumbers}
-              className="rounded border p-2"
-              maxLength={10}
-            />
-            {errMsg.phoneNumber && (
-              <p className="mt-2 text-sm text-red-500">{errMsg.phoneNumber}</p>
-            )}
-          </div>
+          {currentStep === 1 && (
+            <>
+              <div className="flex flex-col">
+                <label htmlFor="emailId" className="mb-1 font-semibold">
+                  Email <span className="text-sm text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  id="emailId"
+                  name="emailId"
+                  value={formData.emailId}
+                  onChange={handleChange}
+                  className="rounded border p-2"
+                />
+                {errMsg.emailId && <p className="mt-2 text-sm text-red-500">{errMsg.emailId}</p>}
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="password" className="mb-1 font-semibold">
+                  Password <span className="text-sm text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="rounded border p-2"
+                />
+                {errMsg.password && <p className="mt-2 text-sm text-red-500">{errMsg.password}</p>}
+              </div>
+            </>
+          )}
+          {currentStep === 2 && (
+            <>
+              <div className="flex flex-col">
+                <label htmlFor="firstName" className="mb-1 font-semibold">
+                  First Name <span className="text-sm text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  onKeyDown={handleAlphabets}
+                  className="rounded border p-2"
+                />
+                {errMsg.firstName && (
+                  <p className="mt-2 text-sm text-red-500">{errMsg.firstName}</p>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="lastName" className="mb-1 font-semibold">
+                  Last Name <span className="text-sm text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  onKeyDown={handleAlphabets}
+                  className="rounded border p-2"
+                />
+                {errMsg.lastName && <p className="mt-2 text-sm text-red-500">{errMsg.lastName}</p>}
+              </div>
+              <div className="col-span-2 flex flex-col">
+                <label htmlFor="address" className="mb-1 font-semibold">
+                  Address <span className="text-sm text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  className="rounded border p-2"
+                />
+                {errMsg.address && <p className="mt-2 text-sm text-red-500">{errMsg.address}</p>}
+              </div>
+            </>
+          )}
+          {currentStep === 3 && (
+            <>
+              <div className="flex flex-col">
+                <label htmlFor="countryCode" className="mb-1 font-semibold">
+                  Country Code <span className="text-sm text-red-500">*</span>
+                </label>
+                <select
+                  id="countryCode"
+                  name="countryCode"
+                  value={formData.countryCode}
+                  onChange={handleChange}
+                  className="rounded border p-2"
+                >
+                  <option value="+91">India (+91)</option>
+                  <option value="+1">America (+1)</option>
+                </select>
+                {errMsg.countryCode && (
+                  <p className="mt-2 text-sm text-red-500">{errMsg.countryCode}</p>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="phoneNumber" className="mb-1 font-semibold">
+                  Phone Number <span className="text-sm text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  onKeyDown={handleNumbers}
+                  className="rounded border p-2"
+                  maxLength={10}
+                />
+                {errMsg.phoneNumber && (
+                  <p className="mt-2 text-sm text-red-500">{errMsg.phoneNumber}</p>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="acceptTermsAndCondition">
+                  <input
+                    type="checkbox"
+                    id="acceptTermsAndCondition"
+                    name="acceptTermsAndCondition"
+                    checked={formData.acceptTermsAndCondition}
+                    onChange={handleChange}
+                  />{" "}
+                  I accept the terms and conditions
+                </label>
+                {errMsg.acceptTermsAndCondition && (
+                  <p className="text-red-500">{errMsg.acceptTermsAndCondition}</p>
+                )}
+              </div>
+            </>
+          )}
         </div>
         <div className="mb-6 flex justify-center space-x-4">
           <button
@@ -457,6 +562,13 @@ const AddPost = () => {
             Save & Next
           </button>
         </div>
+
+        {!isValid && (
+          <p className="text-center text-red-500">
+            Please ensure all required fields are completed.
+          </p>
+        )}
+        {errMsg.submitError && <p className="text-center text-red-500">{errMsg.submitError}</p>}
       </div>
     </div>
   );
