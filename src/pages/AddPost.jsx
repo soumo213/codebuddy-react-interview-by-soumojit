@@ -3,9 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { Validator } from "../utils/validator";
 import { handleAlphabets, handleNumbers } from "../utils";
+import { LoadingButton } from "../components";
 
 const AddPost = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [isValid, setIsValid] = useState(true);
 
@@ -35,7 +37,6 @@ const AddPost = () => {
     emailId: "",
     password: "",
     firstName: "",
-    lastName: "",
     address: "",
     countryCode: "",
     phoneNumber: "",
@@ -127,25 +128,6 @@ const AddPost = () => {
       }
     }
 
-    if (e.target.name === "lastName") {
-      if (!Validator.text(e.target.value)) {
-        setErrMsg((prev) => ({
-          ...prev,
-          lastName: "Please enter your Last Lame",
-        }));
-      } else if (e.target.value && !Validator.name(e.target.value)) {
-        setErrMsg((prev) => ({
-          ...prev,
-          lastName: "Allow only alphabets. Minimum of 2 character and maximum 50.",
-        }));
-      } else {
-        setErrMsg((prev) => ({
-          ...prev,
-          lastName: "",
-        }));
-      }
-    }
-
     if (e.target.name === "address") {
       if (!Validator.text(e.target.value)) {
         setErrMsg((prev) => ({
@@ -231,14 +213,6 @@ const AddPost = () => {
           valid = false;
         }
 
-        if (!Validator.text(lastName)) {
-          errors.lastName = "Please enter your Last Name";
-          valid = false;
-        } else if (lastName && !Validator.name(lastName)) {
-          errors.lastName = "Allow only alphabets. Minimum of 2 characters and maximum 50.";
-          valid = false;
-        }
-
         if (!Validator.text(address)) {
           errors.address = "Please enter your Address";
           valid = false;
@@ -270,14 +244,6 @@ const AddPost = () => {
           valid = false;
         } else if (firstName && !Validator.name(firstName)) {
           errors.firstName = "Allow only alphabets. Minimum of 2 characters and maximum 50.";
-          valid = false;
-        }
-
-        if (!Validator.text(lastName)) {
-          errors.lastName = "Please enter your Last Name";
-          valid = false;
-        } else if (lastName && !Validator.name(lastName)) {
-          errors.lastName = "Allow only alphabets. Minimum of 2 characters and maximum 50.";
           valid = false;
         }
 
@@ -321,6 +287,7 @@ const AddPost = () => {
       const validateStatus = await getValidation();
       setIsValid(validateStatus);
       if (validateStatus) {
+        setLoading(true);
         try {
           const payload = {
             emailId,
@@ -340,7 +307,7 @@ const AddPost = () => {
           });
 
           const result = await response.json();
-
+          setLoading(false);
           if (result.message === "Success") {
             navigate("/posts");
           } else {
@@ -350,6 +317,7 @@ const AddPost = () => {
             }));
           }
         } catch (error) {
+          setLoading(false);
           setErrMsg((prev) => ({
             ...prev,
             submitError: "An error occurred. Please try again later.",
@@ -462,7 +430,6 @@ const AddPost = () => {
                   onKeyDown={handleAlphabets}
                   className="rounded border p-2"
                 />
-                {errMsg.lastName && <p className="mt-2 text-sm text-red-500">{errMsg.lastName}</p>}
               </div>
               <div className="col-span-2 flex flex-col">
                 <label htmlFor="address" className="mb-1 font-semibold">
@@ -546,12 +513,16 @@ const AddPost = () => {
           >
             Back
           </button>
-          <button
-            className="w-32 rounded bg-blue-500 p-2 text-white"
-            onClick={() => handleSubmit()}
-          >
-            Save
-          </button>
+          {loading ? (
+            <LoadingButton />
+          ) : (
+            <button
+              className="w-32 rounded bg-blue-700 p-2 text-white"
+              onClick={() => handleSubmit()}
+            >
+              Save
+            </button>
+          )}
           <button
             className={`w-32 rounded p-2 text-white ${
               currentStep === 3 ? "cursor-not-allowed bg-gray-300" : "bg-lime-500"

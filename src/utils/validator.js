@@ -3,14 +3,14 @@ import { emailRegx, nameRegex, passowrdRegx } from "./regex";
 
 export const Validator = {
   name(data) {
-    if (data.length > 2 && data.length <= 50 && data.trim().match(nameRegex)) {
+    if (data.length >= 2 && data.length <= 50 && data.trim().match(nameRegex)) {
       return true;
     } else {
       return false;
     }
   },
   address(data) {
-    if (data.length > 10) {
+    if (data.length >= 10) {
       return true;
     } else {
       return false;
